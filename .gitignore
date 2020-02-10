@@ -4,3 +4,10 @@ dataset/GF2_PMS2_E117.4_N39.1_20170510_L1A0002351826-MSS2.tiff
 dataset/GF2_PMS2_E117.4_N39.1_20170510_L1A0002351826-PAN2.tiff
 .vscode/settings.json
 .vscode/launch.json
+dataset/test/1.tfrecord
+dataset/test/2.tfrecord
+dataset/train/1.tfrecord
+dataset/train/2.tfrecord
+dataset/val/1.tfrecord
+dataset/val/2.tfrecord
+__pycache__/config.cpython-36.pyc
