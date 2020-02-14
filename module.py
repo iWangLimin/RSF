@@ -5,11 +5,12 @@ def variable_weight(name,initializer,shape,regularize=True):
         tf.add_to_collection('weight_decay',tf.reduce_mean(tf.square(weight))*0.5)
     return weight
 
-def conv(name,x,filter_num=64,kernel_size=3,dilation=1,strides=1,padding='same',activation='relu'):
+def conv(name,x,filter_num=64,kernel_size=3,dilation=1,strides=1,padding='same',\
+         activation='relu',is_training=True):
     with tf.variable_scope(name,reuse=tf.AUTO_REUSE):
         feature_shape=x.shape().as_list()
         filters=variable_weight(name,tf.initializers.he_normal,\
-            shape=[kernel_size,kernel_size,feature_shape[-1],filter_num])
+            shape=[kernel_size,kernel_size,feature_shape[-1],filter_num],regularize=is_training)
         bias=variable_weight(name+"_bias",tf.zeros_initializer,[1,1,filter_num],regularize=False)
         y=tf.add(tf.nn.conv2d(x,filters,strides,padding,dilations=dilation),bias)
         if activation==None:
@@ -18,28 +19,30 @@ def conv(name,x,filter_num=64,kernel_size=3,dilation=1,strides=1,padding='same',
             return tf.nn.relu(y)
         elif activation=='lrelu':
             return tf.nn.leaky_relu(y)
-def bottle_neck(name,x,out_channel=64,activation='relu'):
+def bottle_neck(name,x,out_channel=64,activation='relu',is_training=True):
     with tf.variable_scope(name,reuse=tf.AUTO_REUSE):
-        return conv('conv',x,filter_num=out_channel,kernel_size=1,activation=activation)
+        return conv('conv',x,filter_num=out_channel,kernel_size=1,activation=activation,is_training=is_training)
 
 def dense_block(name,x,growth_rate=16,kernel_size=3,strides=1,padding='same',\
-        activation='relu',conv_num=8,input_include=False):
+        activation='relu',conv_num=8,input_include=False,is_training=True):
     with tf.variable_scope(name,reuse=tf.AUTO_REUSE):
         if input_include:
             all_output=[x] 
         else:
             all_output=[]
-        all_output.append(conv('conv1',x,growth_rate,activation=activation))
+        all_output.append(conv('conv1',x,growth_rate,kernel_size=kernel_size,strides=strides,
+                               padding=padding,activation=activation,is_training=is_training))
         for i in range(2,conv_num+1):
-            all_output.append(conv('conv%d'%(i),tf.concat(-1,all_output),growth_rate,activation=activation))
+            all_output.append(conv('conv%d'%(i),tf.concat(-1,all_output),growth_rate,kernel_size=kernel_size,
+                                   strides=strides,padding=padding,activation=activation,is_training=is_training))
         return tf.concat(-1,all_output)
 
 def conv_transpose(name,x,out_shape,filter_num=64,kernel_size=3,dilation=1,strides=2,\
-        padding='same',activation='relu'):
-    with tf.variable_scope(name,reuse=tf.AUTO_REUSE)
+        padding='same',activation='relu',is_training=True):
+    with tf.variable_scope(name,reuse=tf.AUTO_REUSE):
         feature_shape=x.shape().as_list()
         filters=variable_weight(name,tf.initializers.he_normal,\
-            shape=[kernel_size,kernel_size,feature_shape[-1],filter_num])
+            shape=[kernel_size,kernel_size,feature_shape[-1],filter_num],regularize=is_training)
         bias=variable_weight(name+"_bias",tf.zeros_initializer,[1,1,filter_num],regularize=False)
         y=tf.add(tf.nn.conv2d_transpose(x,filters,out_shape,strides,padding,dilations=dilation),bias)
         if activation==None:
