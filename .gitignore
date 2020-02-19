@@ -11,3 +11,16 @@ dataset/train/2.tfrecord
 dataset/val/1.tfrecord
 dataset/val/2.tfrecord
 __pycache__/config.cpython-36.pyc
+tensorboard/residual_fusion/events.out.tfevents.1582113171.zhou.v2
+checkpoint/checkpoint
+checkpoint/residual_fusion-1.data-00000-of-00001
+checkpoint/residual_fusion-1.index
+checkpoint/residual_fusion-1.meta
+__pycache__/dataset.cpython-36.pyc
+__pycache__/model.cpython-36.pyc
+__pycache__/module.cpython-36.pyc
+tensorboard/residual_fusion/events.out.tfevents.1582113171.zhou.v2
+tensorboard/residual_fusion/events.out.tfevents.1582113171.zhou.v2
+tensorboard/residual_fusion/events.out.tfevents.1582113171.zhou.v2
+tensorboard/residual_fusion/events.out.tfevents.1582113171.zhou.v2
+tensorboard/residual_fusion/events.out.tfevents.1582113519.zhou.v2

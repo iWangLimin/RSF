@@ -5,9 +5,9 @@ class DatasetConfig():
     train_scale,validate_scale,test_scale=0.8,0.1,0.1
     MS_crop_size=256
     MS_crop_step=64
-    Max_Pixel,Min_Pixel=1500,0
+    Max_Pixel,Min_Pixel=1500.0,0.0
 class TrainingConfig():
-    batch_size=24
+    batch_size=8
     weight_dacay=0.0001
     learning_rate=0.0001
     val_step=10000//batch_size

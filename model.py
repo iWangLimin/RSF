@@ -18,24 +18,26 @@ class Model():
         for feature in features:
             residual+=feature
         return residual
-    def ms_reconstruction(self,ms,is_training):
+    def ms_reconstruction(self,ms,is_training=True):
         with tf.variable_scope('ms_reconstruction',reuse=tf.AUTO_REUSE):
             up_ms=tf.image.resize_bilinear(ms,size=(256,256))
             residual=self.residual_extraction(ms,2,16,4,False,is_training=is_training)
             with tf.variable_scope('upsample'):
-                residual=conv_transpose('deconv1',residual,128,is_training=is_training)
-                residual=conv_transpose('deconv2',residual,256,4,activation=None,is_training=is_training)
+                residual=conv_transpose('deconv1',residual,scale=2,is_training=is_training)
+                residual=conv_transpose('deconv2',residual,scale=2,filter_num=4,\
+                    activation=None,is_training=is_training)
             return up_ms+residual
-    def pan_reconstruction(self,pan,ms_out,is_training):
+    def pan_reconstruction(self,pan,is_training=True):
         with tf.variable_scope('pan_reconstruction',reuse=tf.AUTO_REUSE):
-            residual=self.residual_extraction(pan,5,16,8,True,is_training=is_training)
+            residual=self.residual_extraction(pan,5,12,8,True,is_training=is_training)
             residual=bottle_neck('bottle_neck',residual,4,activation=None,is_training=is_training)
             # residual=tf.expand_dims(residual,-1)
             # adjust=variable_weight('adjust',tf.initializers.ones,[4,],regularize=False)
-            return residual+ms_out
-    def forward(self,ms,pan,is_training):
-        return self.pan_reconstruction(pan,self.ms_reconstruction(ms,is_training=is_training),
-                                       is_training=is_training)
+            return residual
+    def forward(self,ms,pan):
+        ms_out=self.ms_reconstruction(ms)
+        pan_out=self.pan_reconstruction(pan)
+        return ms_out+pan_out
     def loss(self,predict,gt):
         return tf.losses.mean_squared_error(gt,predict)+\
                tf.reduce_mean(tf.get_collection('weight_decay'))*TC.weight_dacay
