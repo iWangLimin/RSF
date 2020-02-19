@@ -12,12 +12,12 @@ def summary(sess, graph_save=False):
 def parse_arg():
     parser = argparse.ArgumentParser(description='Test for argparse')
     # parser.add_argument('-save_graph',default=False)
-    parser.add_argument('-restore',default=False)
+    parser.add_argument('-restore',default=True)
     args = parser.parse_args()
     return args
 def init_vars(restore,sess,saver):
     if restore:
-        states=tf.train.get_checkpoint_state('/checkpoint/residual_fusion')
+        states=tf.train.get_checkpoint_state('checkpoint/')
         checkpoint_paths=states.all_model_checkpoint_paths
         saver.recover_last_checkpoints(checkpoint_paths)
         saver.restore(sess,saver.last_checkpoints[-1])
@@ -45,13 +45,12 @@ if __name__ == '__main__':
     opt = tf.train.AdamOptimizer(learning_rate=TC.learning_rate)
     train_op = opt.minimize(loss, global_step=step)
     saver=tf.train.Saver()
-    best_acc=float('INF')
+    best_acc=float('inf')
     with tf.Session() as sess:
+        sess.run(train_iter.initializer)
         init_vars(restore,sess,saver)
         summary_writer=tf.summary.FileWriter('tensorboard\\residual_fusion',\
             session=sess,graph=sess.graph)
-        init_vars(restore,sess,saver)
-        sess.run(train_iter.initializer)
         while True:
             train_ms_value,train_pan_value,train_fusion_value=\
                 sess.run([train_ms,train_pan,train_fusion])
@@ -70,6 +69,7 @@ if __name__ == '__main__':
                     acc_value,val_acc=sess.run([acc,acc_summary])
                     summary_writer.add_summary(val_acc, step_value)
                     if acc_value<best_acc:
+                        best_acc=acc_value
                         saver.save(sess=sess,\
                             save_path=os.path.join(os.getcwd(), './checkpoint/residual_fusion'),global_step=step)
 
