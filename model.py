@@ -41,8 +41,8 @@ class Model():
     def loss(self,predict,gt):
         return tf.losses.mean_squared_error(gt,predict)+\
                tf.reduce_mean(tf.get_collection('weight_decay'))*TC.weight_dacay
-    def acc(self,predict,gt):
-        return tf.metrics.mean_squared_error(gt,predict)
+    def acc(self,predict,gt,op_name):
+        return tf.metrics.mean_squared_error(gt,predict,name=op_name)
 
 
 

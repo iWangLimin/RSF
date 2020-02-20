@@ -38,7 +38,9 @@ if __name__ == '__main__':
     # is_training = tf.placeholder(tf.bool)
     predict = model.forward(ms, pan)
     loss = model.loss(predict,fusion)
-    acc,acc_update= model.acc(predict, fusion)
+    acc,acc_update= model.acc(predict, fusion,'mse_acc')
+    acc_vars=tf.get_collection(tf.GraphKeys.LOCAL_VARIABLES, scope="mse_acc")
+    acc_vars_initializer = tf.variables_initializer(var_list=acc_vars_initializer)
     loss_summary=tf.summary.scalar(name='mse_loss',tensor=loss)
     acc_summary=tf.summary.scalar(name='mse_acc',tensor=acc)
     step = tf.Variable(0,dtype=tf.uint16,trainable=False)
@@ -58,7 +60,7 @@ if __name__ == '__main__':
                 {ms:train_ms_value,pan:train_pan_value,fusion:train_fusion_value})
             summary_writer.add_summary(train_loss,step_value)
             if step_value%TC.val_step==0:
-                sess.run(val_iter.initializer)
+                sess.run([val_iter.initializer,acc_vars_initializer])
                 try:
                     while True:
                         val_ms_value,val_pan_value,val_fusion_value=\
