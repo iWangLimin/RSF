@@ -40,7 +40,7 @@ if __name__ == '__main__':
     loss = model.loss(predict,fusion)
     acc,acc_update= model.acc(predict, fusion,'mse_acc')
     acc_vars=tf.get_collection(tf.GraphKeys.LOCAL_VARIABLES, scope="mse_acc")
-    acc_vars_initializer = tf.variables_initializer(var_list=acc_vars_initializer)
+    acc_vars_initializer = tf.variables_initializer(var_list=acc_vars)
     loss_summary=tf.summary.scalar(name='mse_loss',tensor=loss)
     acc_summary=tf.summary.scalar(name='mse_acc',tensor=acc)
     step = tf.Variable(0,dtype=tf.uint16,trainable=False)
