@@ -1,5 +1,5 @@
 import tensorflow as tf
-from module import conv,dense_block,bottle_neck,conv_transpose
+from module import conv,dense_block,bottle_neck,conv_transpose,variable_weight
 from config import TrainingConfig as TC
 class Model():
     def residual_extraction(self,x,block_num,growth_rate,conv_num,channel_reduce=True,is_training=True):
@@ -44,11 +44,95 @@ class Model():
     def acc(self,predict,gt,op_name):
         return tf.metrics.mean_squared_error(gt,predict,name=op_name)
 
-
-
-
+class ResidualRecursiveFusion():
+    def __init__(self,ms_max_recurse,pan_max_recurse,ms_conv_depth,pan_conv_depth,\
+                        ms_grow,pan_grow):
+        self.ms_max_recurse=ms_max_recurse
+        self.pan_max_recurse=pan_max_recurse
+        self.ms_conv_depth=ms_conv_depth
+        self.pan_conv_depth=pan_conv_depth
+        self.ms_grow=ms_grow
+        self.pan_grow=pan_grow
         
+    def embedding(self,name,input):
+        with tf.variable_scope(name,reuse=tf.AUTO_REUSE):
+            feature=conv(name='conv1',x=input)
+            feature=conv(name='conv2',x=feature)
+            return feature
+    # def pan_embedding(self,pan):
+    #     with tf.variable_scope('PAN_Embedding',reuse=tf.AUTO_REUSE):
+    #         pan_feature=conv(name='conv1',x=pan)
+    #         pan_feature=conv(name='conv2',x=pan_feature,activation=None,filter_num=1)
+    #         return pan_feature
+    def recursion(self,name,input,module):
+        if module=='ms':
+            growth_rate,conv_num=self.ms_grow,self.ms_conv_depth
+        else:
+            growth_rate,conv_num=self.pan_grow,self.pan_conv_depth
+        with tf.variable_scope(name,reuse=tf.AUTO_REUSE):
+            features=dense_block(name='dense_block',x=input,\
+                growth_rate=growth_rate,conv_num=conv_num)
+            features=bottle_neck('bottle_neck',x=features,out_channel=64)
+            return features
+    def trunk(self,name,input,module):
+        reserved_feature=[]
+        if module=='ms':
+            recursion=self.ms_max_recurse
+        else:
+            recursion=self.pan_max_recurse
+        with tf.variable_scope(name,reuse=tf.AUTO_REUSE):
+            for _ in range (1,recursion+1):
+                out_feature=self.recursion('recursion',input,module)
+                input=out_feature
+                # if step%(recursion//reserved)==0:
+                reserved_feature.append(out_feature)
+        return reserved_feature
+    def weight_average(self,name,inputs,reversed):
+         with tf.variable_scope(name,reuse=tf.AUTO_REUSE):
+            w=variable_weight('weight',tf.initializers.constant(value=1/reversed),\
+                shape=(reversed),regularize=False)
+            return tf.reduce_sum(inputs*w,axis=-1)
+    def ms_recon(self,name,up_ms,reserved_feature):
+        recon_features=[]
+        with tf.variable_scope(name,reuse=tf.AUTO_REUSE):
+            for feature in reserved_feature:
+                recon_feature=conv_transpose('deconv1',feature,scale=2)
+                recon_feature=conv_transpose('deconv2',recon_feature,scale=2,filter_num=4,\
+                    activation=None)
+                recon_features.append(recon_feature)
+            return up_ms+self.weight_average(\
+                'feture_average',tf.stack(recon_features,axis=-1),len(reserved_feature))
+        
+    def pan_recon(self,name,ms_out,reserved_feature):
+        recon_features=[]
+        with tf.variable_scope(name,reuse=tf.AUTO_REUSE):
+            for feature in reserved_feature:
+                recon_feature=bottle_neck(\
+                    'bottle_neck',x=feature,out_channel=4,activation=None)
+                recon_features.append(recon_feature)
+            return ms_out+self.weight_average(\
+                'feture_average',tf.stack(recon_features,axis=-1),len(reserved_feature))
+    def branch(self,name,input,module):
+        with tf.variable_scope(name,reuse=tf.AUTO_REUSE):
+            embedding_feature=self.embedding('embedding',input)
+            reserved_feature=self.trunk('trunk',embedding_feature,module)
+            return reserved_feature
+    def forward(self,ms,pan):
+        up_ms=tf.image.resize_bicubic(ms,[256,256])
+        ms_reserved_features=self.branch('ms_branch',ms,'ms')
+        ms_out=self.ms_recon('ms_recon',up_ms,ms_reserved_features)
 
-
+        pan_reserved_features=self.branch('pan_branch',pan,'pan')
+        pan_out=self.pan_recon('pan_recon',ms_out,pan_reserved_features)
+        return ms_out,pan_out
+    def loss(self,ms_reconst,pan_reconst,gt):
+        with tf.variable_scope('loss'):
+            ms_loss=tf.losses.mean_squared_error(predictions=ms_reconst,labels=gt)
+            pan_loss=tf.reduce_mean((tf.square((pan_reconst-gt))+0.001**2))
+            return ms_loss,pan_loss,ms_loss+pan_loss
+    def acc(self,prediction,gt,op_name):
+        with tf.variable_scope('acc'):
+            return tf.metrics.mean_squared_error(\
+                labels=gt,predictions=prediction,name=op_name)
         
 

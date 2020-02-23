@@ -6,6 +6,9 @@ import glob
 import random
 import cv2
 import os
+def up_sample(ms,scale=4):
+    return cv2.resize(ms,dsize=(0,0),fx=scale,fy=scale,\
+        interpolation=cv2.INTER_CUBIC)
 def down_sample(img,scale=4):
     return cv2.resize(img,dsize=(0,0),fx=1/scale,fy=1/scale,\
         interpolation=cv2.INTER_CUBIC)
@@ -34,8 +37,10 @@ def sampler(col_patch,row_patch):
     val_idx=random.sample(all_idx,int(num*DC.validate_scale))
     test_idx=all_idx-set(val_idx)
     return train_idx,val_idx,test_idx
-def write_patch(ms,pan,writer):
+def write_patch(ms,pan,writer,ms_upsample):
     input_ms,input_pan=down_sample(ms),down_sample(pan)
+    if ms_upsample:
+        input_ms=up_sample(input_ms)
     ms_feature,pan_feature,fusion=\
         tf.train.Feature(bytes_list=tf.train.BytesList(value=[input_ms.tostring()])),\
         tf.train.Feature(bytes_list=tf.train.BytesList(value=[input_pan.tostring()])),\
@@ -49,11 +54,13 @@ if __name__ == "__main__":
         img_idx+=1
         ms,pan,col_patch_num,row_patch_num=read_tif(img)
         sample_idx=sampler(col_patch_num,row_patch_num)
-        for i,catagory in enumerate(['train','val','test']):
+        for i,catagory in enumerate(['train_ms_upsample','val_ms_upsample','test_ms_upsample']):
             record_name=os.path.join(os.getcwd(),'dataset/%s/%d.tfrecord'%(catagory,img_idx))
+            if not os.path.exists(os.path.dirname(record_name)):
+                os.mkdir(os.path.dirname(record_name))
             with tf.io.TFRecordWriter(record_name) as writer:
                 for idx in sample_idx[i]:
                     ms_patch,pan_patch=read_patch(idx,ms,pan,col_patch_num,row_patch_num)
-                    write_patch(ms_patch,pan_patch,writer)
+                    write_patch(ms_patch,pan_patch,writer,ms_upsample=True)
         
 

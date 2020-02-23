@@ -7,7 +7,7 @@ class DatasetConfig():
     MS_crop_step=64
     Max_Pixel,Min_Pixel=1500.0,0.0
 class TrainingConfig():
-    batch_size=8
+    batch_size=4
     weight_dacay=0.0001
-    learning_rate=0.0001
-    val_step=10000//batch_size
+    learning_rate=0.001
+    val_step=5000//batch_size
