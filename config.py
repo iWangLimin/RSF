@@ -9,5 +9,5 @@ class DatasetConfig():
 class TrainingConfig():
     batch_size=4
     weight_dacay=0.0001
-    learning_rate=0.001
+    learning_rate=0.0001
     val_step=5000//batch_size
