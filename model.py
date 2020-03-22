@@ -1,6 +1,7 @@
 import tensorflow as tf
 from module import conv,dense_block,bottle_neck,conv_transpose,variable_weight
 from config import TrainingConfig as TC
+from config import LapFusionConfig
 class Model():
     def residual_extraction(self,x,block_num,growth_rate,conv_num,channel_reduce=True,is_training=True):
         features=[]
@@ -189,5 +190,70 @@ class ResidualRecursiveFusion():
         with tf.variable_scope('acc'):
             return tf.metrics.mean_squared_error(\
                 labels=gt,predictions=prediction,name=op_name)
-        
-
+class LapFusion():
+    def upsample(self,feature,out_channel=64,scale=2):
+        # with tf.variable_scope(name,reuse=tf.AUTO_REUSE):
+        return conv_transpose('deconv',feature,scale,out_channel)
+    def downsample(self,feature,out_channel,scale=2):
+        # with tf.variable_scope(name,reuse=tf.AUTO_REUSE):
+        return conv('down_conv',feature,out_channel,strides=scale)
+    def ms_feature_extraction(self,name,ms):
+        with tf.variable_scope(name,reuse=tf.AUTO_REUSE):
+            feature=ms
+            for i in range (1,LapFusionConfig.ms_depth+1):
+                feature=conv('conv%d'%(i),feature,LapFusionConfig.ms_feature_channel)
+            with tf.variable_scope('upsample1',reuse=tf.AUTO_REUSE):
+                ms_feature_1=self.upsample(feature,out_channel=64)
+            with tf.variable_scope('upsample2',reuse=tf.AUTO_REUSE):
+                ms_feature_2=self.upsample(ms_feature_1,out_channel=64)
+            return ms_feature_1,ms_feature_2
+    def pan_feature_extraction(self,name,pan):
+        with tf.variable_scope(name,reuse=tf.AUTO_REUSE):
+            l1,l2,l3=LapFusionConfig.pan_depth
+            l1,l2=l1-1,l2-1
+            feature_channel=LapFusionConfig.pan_featurec_channel
+            with tf.variable_scope('block1',reuse=tf.AUTO_REUSE):
+                feature=pan
+                for i in range(1,l1+1):
+                    feature=conv('conv%d'%(i),feature,feature_channel[0])
+            with tf.variable_scope('down_sample1',reuse=tf.AUTO_REUSE):
+                feature=self.downsample(feature,out_channel=feature_channel[0])
+            with tf.variable_scope('block2',reuse=tf.AUTO_REUSE):
+                for i in range(1,l2+1):
+                    feature=conv('conv%d'%(i),feature,feature_channel[1])
+            with tf.variable_scope('down_sample2',reuse=tf.AUTO_REUSE):
+                feature=self.downsample(feature,out_channel=feature_channel[1])
+            with tf.variable_scope('block3',reuse=tf.AUTO_REUSE):
+                for i in range(1,l3+1):
+                    feature=conv('conv%d'%(i),feature,feature_channel[2])
+            with tf.variable_scope('upsample1',reuse=tf.AUTO_REUSE):
+                pan_feature_1=self.upsample(feature,out_channel=64)
+            with tf.variable_scope('upsample2',reuse=tf.AUTO_REUSE):
+                pan_feature_2=self.upsample(pan_feature_1,out_channel=64)
+            return pan_feature_1,pan_feature_2
+    def feature_fusion(self,name,ms_feature,pan_feature):
+        with tf.variable_scope(name,reuse=tf.AUTO_REUSE):
+            channel_in=ms_feature.get_shape().as_list()[-1]
+            fusion_feature=tf.concat([ms_feature,pan_feature],axis=-1)
+            fusion_feature=conv('conv1',fusion_feature,filter_num=channel_in)
+            detail=conv('conv2',fusion_feature,4,activation=None)
+            return detail
+    def forward(self,ms,pan):
+        with tf.variable_scope('LapFusion',reuse=tf.AUTO_REUSE):
+            ms_feature_1,ms_feature_2=self.ms_feature_extraction('ms_feature_extraction',ms)
+            pan_feature_1,pan_feature_2=self.pan_feature_extraction('pan_feature_extraction',pan)
+            detail_1=self.feature_fusion('fusion1',ms_feature_1,pan_feature_1)
+            detail_2=self.feature_fusion('fusion2',ms_feature_2,pan_feature_2)
+            fusion_1=tf.image.resize_bicubic(ms,size=(128,128))+detail_1
+            up_fusion_1=tf.image.resize_bicubic(fusion_1,size=(256,256))
+            bp_stop=tf.stop_gradient(up_fusion_1)
+            fusion_2=bp_stop+detail_2
+            return fusion_1,fusion_2
+    def loss(self,fusion_1,fusion_2,gt_1,gt_2):
+        return self.l1_loss(gt_1,fusion_1),self.l1_loss(gt_2,fusion_2)
+    def l1_loss(self,gt,prediction):
+        return tf.reduce_mean(tf.sqrt((tf.square(prediction-gt)+0.001**2)))
+    def acc(self,prediction,gt,op_name):
+        with tf.variable_scope('acc'):
+            return tf.metrics.mean_squared_error(\
+                labels=gt,predictions=prediction,name=op_name)

@@ -37,7 +37,7 @@ def dense_block(name,x,growth_rate=16,kernel_size=3,strides=1,padding='SAME',\
                                    strides=strides,padding=padding,activation=activation,is_training=is_training))
         return tf.concat(all_output,-1)
 
-def conv_transpose(name,x,scale,filter_num=64,kernel_size=3,dilation=1,strides=2,\
+def conv_transpose(name,x,scale,filter_num=64,kernel_size=3,dilation=1,\
         padding='SAME',activation='lrelu',is_training=True):
     with tf.variable_scope(name,reuse=tf.AUTO_REUSE):
         _,h,w,in_channel=x.get_shape().as_list()
@@ -45,7 +45,7 @@ def conv_transpose(name,x,scale,filter_num=64,kernel_size=3,dilation=1,strides=2
         filters=variable_weight(name,tf.initializers.he_normal(),\
             shape=[kernel_size,kernel_size,filter_num,in_channel])
         bias=variable_weight(name+"_bias",tf.zeros_initializer(),[1,1,filter_num],regularize=False)
-        y=tf.add(tf.nn.conv2d_transpose(x,filters,out_shape,strides,padding,dilations=dilation),bias)
+        y=tf.add(tf.nn.conv2d_transpose(x,filters,out_shape,scale,padding,dilations=dilation),bias)
         if activation==None:
             return y
         elif activation=='relu':

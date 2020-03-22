@@ -6,6 +6,14 @@ class DatasetConfig():
     MS_crop_size=256
     MS_crop_step=64
     Max_Pixel,Min_Pixel=1500.0,0.0
+class LapFusionConfig():
+    ms_depth=8
+    ms_feature_channel=64
+    '''first downsample is included in first 3 layers,
+        second downsample is included in second 5 layers'''
+    pan_depth=(3,5,6)
+    pan_featurec_channel=(32,48,64)
+    
 class TrainingConfig():
     batch_size=4
     weight_dacay=0.0001
