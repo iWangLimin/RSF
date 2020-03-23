@@ -13,7 +13,12 @@ class LapFusionConfig():
         second downsample is included in second 5 layers'''
     pan_depth=(3,5,6)
     pan_featurec_channel=(32,48,64)
-    
+class DenseLapFusionConfig():
+    dense_depth=6
+    ms_dense_block=2
+    k=12
+    pan_dense_block=(1,2)
+
 class TrainingConfig():
     batch_size=32
     weight_dacay=0.0001
