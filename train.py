@@ -66,12 +66,12 @@ with tf.Session() as sess:
     summary_writer=tf.summary.FileWriter('tensorboard_LapFusion',\
         session=sess,graph=sess.graph)
     while True:
-        # train_ms_value,train_pan_value,train_fusion_1_value,train_fusion_2_value=\
-        #     sess.run([train_ms,train_pan,train_fusion_1,train_fusion_2])
-        # train_loss,step_value,_=sess.run([train_summary,step,step_op],feed_dict=\
-        #     {ms:train_ms_value,pan:train_pan_value,\
-        #     fusion_1:train_fusion_1_value,fusion_2:train_fusion_2_value})
-        # summary_writer.add_summary(train_loss,step_value)
+        train_ms_value,train_pan_value,train_fusion_1_value,train_fusion_2_value=\
+            sess.run([train_ms,train_pan,train_fusion_1,train_fusion_2])
+        train_loss,step_value,_=sess.run([train_summary,step,step_op],feed_dict=\
+            {ms:train_ms_value,pan:train_pan_value,\
+            gt_1:train_fusion_1_value,gt_2:train_fusion_2_value})
+        summary_writer.add_summary(train_loss,step_value)
         step_value=sess.run(step)
         if step_value%TC.val_step==0:
             sess.run([val_iter.initializer,acc_vars_initializer])

@@ -15,7 +15,7 @@ class LapFusionConfig():
     pan_featurec_channel=(32,48,64)
     
 class TrainingConfig():
-    batch_size=1
+    batch_size=32
     weight_dacay=0.0001
-    learning_rate=0.0001
+    learning_rate=0.001
     val_step=5000//batch_size

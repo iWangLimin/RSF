@@ -50,7 +50,7 @@ class Dataset():
         self.dataset=self.dataset.map(self.parse_example)
         self.dataset=self.dataset.map(self.normalize)
         if self.train_set:
-            self.dataset=self.dataset.shuffle(10000).\
+            self.dataset=self.dataset.shuffle(20000).\
                 repeat().batch(batch_size=TC.batch_size)
         else:
             self.dataset=self.dataset.batch(batch_size=TC.batch_size)
