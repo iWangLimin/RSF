@@ -233,8 +233,8 @@ class LapFusion():
             return pan_feature_1,pan_feature_2
     def feature_fusion(self,name,ms_feature,pan_feature):
         with tf.variable_scope(name,reuse=tf.AUTO_REUSE):
-            channel_in=ms_feature.get_shape().as_list()[-1]
             fusion_feature=tf.concat([ms_feature,pan_feature],axis=-1)
+            channel_in=fusion_feature.get_shape().as_list()[-1]
             fusion_feature=conv('conv1',fusion_feature,filter_num=channel_in)
             detail=conv('conv2',fusion_feature,4,activation=None)
             return detail
@@ -244,8 +244,8 @@ class LapFusion():
             pan_feature_1,pan_feature_2=self.pan_feature_extraction('pan_feature_extraction',pan)
             detail_1=self.feature_fusion('fusion1',ms_feature_1,pan_feature_1)
             detail_2=self.feature_fusion('fusion2',ms_feature_2,pan_feature_2)
-            fusion_1=tf.image.resize_bicubic(ms,size=(128,128))+detail_1
-            up_fusion_1=tf.image.resize_bicubic(fusion_1,size=(256,256))
+            fusion_1=tf.image.resize_bicubic(ms,size=(64,64))+detail_1
+            up_fusion_1=tf.image.resize_bicubic(fusion_1,size=(128,128))
             bp_stop=tf.stop_gradient(up_fusion_1)
             fusion_2=bp_stop+detail_2
             return fusion_1,fusion_2
