@@ -27,7 +27,7 @@ def visual_result(img):
         imgMatrix = None
     return visual_image.transpose(2,0,1)
 def load_weight(saver,sess):
-    states=tf.train.get_checkpoint_state('checkpointLapFusion/')
+    states=tf.train.get_checkpoint_state('checkpointDenseLapFusion/')
     checkpoint_paths=states.all_model_checkpoint_paths
     saver.recover_last_checkpoints(checkpoint_paths)
     saver.restore(sess,saver.last_checkpoints[-1])
@@ -43,7 +43,7 @@ def load_data():
     return tf.convert_to_tensor(ms,tf.float32),tf.convert_to_tensor(pan,tf.float32),\
         gt_downtown,gt_suburb
 ms,pan,gt_downtown,gt_suburb=load_data()
-lf=LapFusion(ms,pan)
+lf=DenseLapFusion(ms_size=64)
 predict=lf.forward(ms,pan)
 saver=tf.train.Saver()
 with tf.Session() as sess:

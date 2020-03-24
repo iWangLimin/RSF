@@ -258,6 +258,8 @@ class LapFusion():
             return tf.metrics.mean_squared_error(\
                 labels=gt,predictions=prediction,name=op_name)
 class DenseLapFusion():
+    def __init__(self,ms_size=32):
+        self.ms_size=ms_size
     def upsample(self,feature,out_channel=64,scale=2):
         # with tf.variable_scope(name,reuse=tf.AUTO_REUSE):
         return conv_transpose('deconv',feature,scale,out_channel)
@@ -315,8 +317,8 @@ class DenseLapFusion():
             pan_feature_1,pan_feature_2=self.pan_feature_extraction('pan_feature_extraction',pan)
             detail_1=self.feature_fusion('fusion1',ms_feature_1,pan_feature_1)
             detail_2=self.feature_fusion('fusion2',ms_feature_2,pan_feature_2)
-            fusion_1=tf.image.resize_bicubic(ms,size=(64,64))+detail_1
-            up_fusion_1=tf.image.resize_bicubic(fusion_1,size=(128,128))
+            fusion_1=tf.image.resize_bicubic(ms,size=(self.ms_size*2,self.ms_size*2))+detail_1
+            up_fusion_1=tf.image.resize_bicubic(fusion_1,size=(self.ms_size*4,self.ms_size*4))
             bp_stop=tf.stop_gradient(up_fusion_1)
             fusion_2=bp_stop+detail_2
             return fusion_1,fusion_2
