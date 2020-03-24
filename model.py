@@ -266,13 +266,14 @@ class DenseLapFusion():
         return conv('down_conv',feature,out_channel,strides=scale)
     def ms_feature_extraction(self,name,ms):
         with tf.variable_scope(name,reuse=tf.AUTO_REUSE):
-            with tf.variable_scope('low_level_extraction'):
+            with tf.variable_scope('low_level_extraction',reuse=tf.AUTO_REUSE):
                 feature=ms
                 feature=conv('conv1',feature,64)
                 feature=conv('conv2',feature,64)
-            with tf.variable_scope('')
-            for i in range (1,LapFusionConfig.ms_depth+1):
-                feature=conv('conv%d'%(i),feature,LapFusionConfig.ms_feature_channel)
+            feature=dense_block('dense_block1',feature,12,conv_num=6,input_include=True)
+            feature=bottle_neck('bottle_neck1',feature,64)
+            feature=dense_block('dense_block2',feature,12,conv_num=6,input_include=True)
+            feature=bottle_neck('bottle_neck2',feature,64)
             with tf.variable_scope('upsample1',reuse=tf.AUTO_REUSE):
                 ms_feature_1=self.upsample(feature,out_channel=64)
             with tf.variable_scope('upsample2',reuse=tf.AUTO_REUSE):
@@ -280,27 +281,26 @@ class DenseLapFusion():
             return ms_feature_1,ms_feature_2
     def pan_feature_extraction(self,name,pan):
         with tf.variable_scope(name,reuse=tf.AUTO_REUSE):
-            l1,l2,l3=LapFusionConfig.pan_depth
-            l1,l2=l1-1,l2-1
-            feature_channel=LapFusionConfig.pan_featurec_channel
-            with tf.variable_scope('block1',reuse=tf.AUTO_REUSE):
+            with tf.variable_scope('low_level_extraction'):
                 feature=pan
-                for i in range(1,l1+1):
-                    feature=conv('conv%d'%(i),feature,feature_channel[0])
-            with tf.variable_scope('down_sample1',reuse=tf.AUTO_REUSE):
-                feature=self.downsample(feature,out_channel=feature_channel[0])
-            with tf.variable_scope('block2',reuse=tf.AUTO_REUSE):
-                for i in range(1,l2+1):
-                    feature=conv('conv%d'%(i),feature,feature_channel[1])
-            with tf.variable_scope('down_sample2',reuse=tf.AUTO_REUSE):
-                feature=self.downsample(feature,out_channel=feature_channel[1])
-            with tf.variable_scope('block3',reuse=tf.AUTO_REUSE):
-                for i in range(1,l3+1):
-                    feature=conv('conv%d'%(i),feature,feature_channel[2])
+                feature=conv('conv1',feature,64)
+                feature1=conv('conv2',feature,64)
+            with tf.variable_scope('down_sample1'):
+                feature2=self.downsample(feature1,64)
+            feature2=dense_block('dense_block1',feature2,12,conv_num=6,input_include=True)
+            feature2=bottle_neck('bottle_neck1',feature2,64)
+            with tf.variable_scope('down_sample2'):
+                feature3=self.downsample(feature2,64)
+            feature3=dense_block('dense_block2',feature3,12,conv_num=6,input_include=True)
+            feature3=bottle_neck('bottle_neck2',feature3,64)
+            feature3=dense_block('dense_block3',feature3,12,conv_num=6,input_include=True)
+            feature3=bottle_neck('bottle_neck3',feature3,64)
             with tf.variable_scope('upsample1',reuse=tf.AUTO_REUSE):
-                pan_feature_1=self.upsample(feature,out_channel=64)
+                feature3=self.upsample(feature3,out_channel=64)
+                pan_feature_1=conv('conv',tf.concat([feature2,feature3],-1),filter_num=64)
             with tf.variable_scope('upsample2',reuse=tf.AUTO_REUSE):
-                pan_feature_2=self.upsample(pan_feature_1,out_channel=64)
+                up_pan_feature_1=self.upsample(pan_feature_1,out_channel=64)
+                pan_feature_2=conv('conv',tf.concat([up_pan_feature_1,feature1],-1),filter_num=64)
             return pan_feature_1,pan_feature_2
     def feature_fusion(self,name,ms_feature,pan_feature):
         with tf.variable_scope(name,reuse=tf.AUTO_REUSE):

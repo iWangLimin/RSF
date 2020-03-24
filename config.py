@@ -12,7 +12,7 @@ class LapFusionConfig():
     '''first downsample is included in first 3 layers,
         second downsample is included in second 5 layers'''
     pan_depth=(3,5,6)
-    pan_featurec_channel=(32,48,64)
+    pan_featurec_channel=(64,64,64)
 class DenseLapFusionConfig():
     dense_depth=6
     ms_dense_block=2

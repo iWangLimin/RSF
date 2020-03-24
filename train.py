@@ -1,6 +1,6 @@
 import tensorflow as tf
 from dataset import Dataset
-from model import LapFusion
+from model import LapFusion,DenseLapFusion
 from config import TrainingConfig as TC,DatasetConfig as DC
 import argparse
 import os
@@ -32,7 +32,7 @@ if __name__ == '__main__':
     val_iter=val_set.get_iter()
     train_ms,train_pan,train_fusion_1,train_fusion_2=train_iter.get_next()
     val_ms,val_pan,val_fusion=val_iter.get_next()
-    model = LapFusion()
+    model = DenseLapFusion()
     ms,pan,gt_1,gt_2=tf.placeholder(tf.float32, [None,32,32, 4]), \
                         tf.placeholder(tf.float32, [None, 128, 128, 1]), \
                         tf.placeholder(tf.float32, [None, 64, 64, 4]),\
@@ -40,7 +40,7 @@ if __name__ == '__main__':
     # is_training = tf.placeholder(tf.bool)
     fusion_1,fusion_2= model.forward(ms, pan)
     loss_1,loss_2= model.loss(fusion_1,fusion_2,gt_1,gt_2)
-    loss=loss_1+loss_2+tf.add_n(tf.get_collection('weight_decay'))*TC.weight_dacay
+    loss=0.2*loss_1+0.8*loss_2+tf.add_n(tf.get_collection('weight_decay'))*TC.weight_dacay
     acc,acc_update= model.acc(fusion_2,gt_2,'mse_acc')
     acc_vars=tf.get_collection(tf.GraphKeys.LOCAL_VARIABLES, scope="mse_acc")
     acc_vars_initializer = tf.variables_initializer(var_list=acc_vars)
@@ -63,7 +63,7 @@ if __name__ == '__main__':
 with tf.Session() as sess:
     sess.run(train_iter.initializer)
     init_vars(False,sess,saver)
-    summary_writer=tf.summary.FileWriter('tensorboard_LapFusion',\
+    summary_writer=tf.summary.FileWriter('tensorboard_DenseLapFusion',\
         session=sess,graph=sess.graph)
     while True:
         train_ms_value,train_pan_value,train_fusion_1_value,train_fusion_2_value=\
@@ -87,5 +87,5 @@ with tf.Session() as sess:
                 if acc_value<best_acc_value:
                     best_acc.assign(acc_value)
                     saver.save(sess=sess,\
-                        save_path=os.path.join(os.getcwd(), './checkpointLapFusion/model'),global_step=step)
+                        save_path=os.path.join(os.getcwd(), './checkpointDenseLapFusion/model'),global_step=step)
 
