@@ -36,15 +36,15 @@ def read_patch(idx,ms,pan,col_patch_num,row_patch_num):
 def sampler(col_patch,row_patch):
     num=col_patch*row_patch
     all_idx=set(range(num))
-    val_idx=random.sample(all_idx,1000)
-    all_idx=all_idx-set(val_idx)
-    test_idx=random.sample(all_idx,1000)
-    train_idx=all_idx-set(test_idx)
-    return train_idx,val_idx,test_idx
+    val_idx=random.sample(all_idx,2000)
+    # all_idx=all_idx-set(val_idx)
+    # test_idx=random.sample(all_idx,1000)
+    train_idx=all_idx-set(val_idx)
+    return train_idx,val_idx
 def write_patch(ms,pan,writer,cata='train'):
     input_pan=down_sample(pan,scale=4)
     fusion_1=down_sample(ms)
-    input_ms=down_sample(fusion_1)
+    input_ms=down_sample(ms,scale=4)
     # if ms_upsample:
     #     input_ms=up_sample(input_ms)
     ms_feature=tf.train.Feature(bytes_list=tf.train.BytesList(value=[input_ms.tostring()]))
@@ -87,8 +87,8 @@ if __name__ == "__main__":
         img_idx+=1
         ms,pan,col_patch_num,row_patch_num=read_tif(img)
         sample_idx=sampler(col_patch_num,row_patch_num)
-        for i,catagory in enumerate(['train','val','test']):
-            record_name=os.path.join(os.getcwd(),'dataset\\%s\\%d.tfrecord'%(catagory,img_idx))
+        for i,catagory in enumerate(['train','val']):
+            record_name=os.path.join(os.getcwd(),'datasetV2\\%s\\%d.tfrecord'%(catagory,img_idx))
             if not os.path.exists(os.path.dirname(record_name)):
                 os.mkdir(os.path.dirname(record_name))
             with tf.io.TFRecordWriter(record_name) as writer:
