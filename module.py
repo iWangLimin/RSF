@@ -1,15 +1,19 @@
 import tensorflow as tf
+import numpy as np
 def variable_weight(name,initializer,shape,regularize=True):
-    weight=tf.get_variable(name,shape,tf.float32,initializer)
+    if initializer=='normal':
+        weight=tf.get_variable(name,initializer=tf.random.normal(np.array(shape),mean=0,stddev=0.001))
+    else:
+        weight=tf.get_variable(name,shape,tf.float32,initializer)
     if regularize:
         tf.add_to_collection('weight_decay',tf.reduce_mean(tf.square(weight))*0.5)
     return weight
 
 def conv(name,x,filter_num=64,kernel_size=3,dilation=1,strides=1,padding='SAME',\
-         activation='lrelu',is_training=True):
+         activation='lrelu',initializer=tf.initializers.he_normal(),is_training=True):
     with tf.variable_scope(name,reuse=tf.AUTO_REUSE):
         feature_shape=x.get_shape().as_list()
-        filters=variable_weight(name,tf.initializers.he_normal(),\
+        filters=variable_weight(name,initializer,\
             shape=[kernel_size,kernel_size,feature_shape[-1],filter_num])
         bias=variable_weight(name+"_bias",tf.zeros_initializer(),[1,1,filter_num],regularize=False)
         y=tf.add(tf.nn.conv2d(x,filters,strides,padding,dilations=dilation),bias)

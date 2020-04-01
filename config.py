@@ -7,11 +7,11 @@ class DatasetConfig():
     MS_crop_step=64
     Max_Pixel,Min_Pixel=1500.0,0.0
 class LapFusionConfig():
-    ms_depth=8
+    ms_depth=6
     ms_feature_channel=64
     '''first downsample is included in first 3 layers,
         second downsample is included in second 5 layers'''
-    pan_depth=(3,5,6)
+    pan_depth=(3,3,4)
     pan_featurec_channel=(64,64,64)
 class DenseLapFusionConfig():
     dense_depth=6
@@ -20,7 +20,7 @@ class DenseLapFusionConfig():
     pan_dense_block=(1,2)
 
 class TrainingConfig():
-    batch_size=32
+    batch_size=64
     weight_dacay=0.0001
     learning_rate=0.001
-    val_step=5000//batch_size
+    val_step=110000//batch_size
