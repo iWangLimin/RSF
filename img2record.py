@@ -36,7 +36,7 @@ def read_patch(idx,ms,pan,col_patch_num,row_patch_num):
 def sampler(col_patch,row_patch):
     num=col_patch*row_patch
     all_idx=set(range(num))
-    val_idx=random.sample(all_idx,2000)
+    val_idx=random.sample(all_idx,1000)
     # all_idx=all_idx-set(val_idx)
     # test_idx=random.sample(all_idx,1000)
     train_idx=all_idx-set(val_idx)
