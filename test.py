@@ -51,9 +51,9 @@ def load_data(area,full_res=False):
         np.load(img_dir+'pan_%s.npy'%(area))
         # np.load(img_dir+'pan_suburb.npy')
     ms=cv2.GaussianBlur(ms,ksize=(0,0),sigmaX=1,sigmaY=1)
-    ms=cv2.resize(ms,dsize=(0,0),fx=0.25,fy=0.25)
+    ms=cv2.resize(ms,dsize=(0,0),fx=0.25,fy=0.25,interpolation=cv2.INTER_CUBIC)
     pan = cv2.GaussianBlur(pan, ksize=(0, 0), sigmaX=1, sigmaY=1)
-    pan=cv2.resize(pan,dsize=(0,0),fx=0.25,fy=0.25)
+    pan=cv2.resize(pan,dsize=(0,0),fx=0.25,fy=0.25,interpolation=cv2.INTER_CUBIC)
     ms,pan=normalize(ms),\
         normalize(pan)
     # ms_suburb,pan_suburb=normalize(ms_suburb),\
