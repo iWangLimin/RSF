@@ -16,11 +16,11 @@ def init_vars(restore,sess,saver,name):
 if __name__ == '__main__':
     # args=parse_arg()
     # restore=args.restore
-    restore=False
-    name='LapFusionShallow'
-    model = LapFusion()
-    train_set = Dataset(train_set=True,dir_path='dataset/train')
-    val_set = Dataset(train_set=False,dir_path='dataset/val')
+    restore=True
+    name='DenseLapFusionNewData'
+    model = DenseNoComV2()
+    train_set = Dataset(train_set=True,dir_path='datasetV2/train')
+    val_set = Dataset(train_set=False,dir_path='datasetV2/val')
     train_iter=train_set.get_iter()
     val_iter=val_set.get_iter()
     train_ms,train_pan,train_fusion_1,train_fusion_2=train_iter.get_next()
@@ -42,7 +42,7 @@ if __name__ == '__main__':
         tf.summary.scalar(name='loss',tensor=loss)])
     val_summary=tf.summary.scalar(name='mse_acc',tensor=acc)
     step = tf.Variable(0,dtype=tf.int32,trainable=False)
-    learning_rate=tf.train.exponential_decay(TC.learning_rate,step,800,0.96)
+    learning_rate=tf.train.exponential_decay(TC.learning_rate*0.8,step,1000,0.96)
     opt= tf.train.AdamOptimizer(learning_rate)
     # lr_summary=tf.summary.scalar(name='lr',tensor=learning_rate)
     # pan_opt = tf.train.AdamOptimizer(learning_rate=TC.learning_rate)
@@ -84,6 +84,6 @@ if __name__ == '__main__':
                     if acc_value<best_acc_value:
                         # best_acc.assign(acc_value)
                         sess.run(tf.assign(best_acc,acc_value))
-                        saver.save(sess=sess,\
-                            save_path=os.path.join(os.getcwd(), './checkpoint%s/model'%(name)),global_step=step)
+                    saver.save(sess=sess,\
+                        save_path=os.path.join(os.getcwd(), './checkpoint%s/model'%(name)),global_step=step)
 

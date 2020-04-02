@@ -23,4 +23,4 @@ class TrainingConfig():
     batch_size=64
     weight_dacay=0.0001
     learning_rate=0.001
-    val_step=110000//batch_size
+    val_step=220000//batch_size

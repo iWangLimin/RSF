@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
-from model import LapFusion,DenseLapFusion,DenseMsScaleCom,DenseNoCom,DenseNoComV2
+from model import LapFusion,DenseMsScaleCom,DenseNoCom,DenseNoComV2
+from camparsion import PNN,RSIFNN
 from dataset import Dataset
 import cv2
 from scipy import io
@@ -39,9 +40,9 @@ def load_weight(saver,sess,name):
     saver.restore(sess,saver.last_checkpoints[-1])
 def load_data(area,full_res=False):
     if full_res:
-        img_dir='/root/FullRes/'
+        img_dir='/root/test_img/FullRes/'
     else:
-        img_dir='/root/RSF/test_img/'
+        img_dir='/root/test_img/ReduceRes/'
         gt=np.load(img_dir+'gt_%s.npy'%(area))
         # gt_suburb=np.load(img_dir+'gt_suburb.npy')
     ms=\
@@ -50,10 +51,10 @@ def load_data(area,full_res=False):
     pan=\
         np.load(img_dir+'pan_%s.npy'%(area))
         # np.load(img_dir+'pan_suburb.npy')
-    ms=cv2.GaussianBlur(ms,ksize=(0,0),sigmaX=1,sigmaY=1)
-    ms=cv2.resize(ms,dsize=(0,0),fx=0.25,fy=0.25,interpolation=cv2.INTER_CUBIC)
-    pan = cv2.GaussianBlur(pan, ksize=(0, 0), sigmaX=1, sigmaY=1)
-    pan=cv2.resize(pan,dsize=(0,0),fx=0.25,fy=0.25,interpolation=cv2.INTER_CUBIC)
+    # ms=cv2.GaussianBlur(ms,ksize=(0,0),sigmaX=1,sigmaY=1)
+    # ms=cv2.resize(ms,dsize=(0,0),fx=0.25,fy=0.25,interpolation=cv2.INTER_CUBIC)
+    # pan = cv2.GaussianBlur(pan, ksize=(0, 0), sigmaX=1, sigmaY=1)
+    # pan=cv2.resize(pan,dsize=(0,0),fx=0.25,fy=0.25,interpolation=cv2.INTER_CUBIC)
     ms,pan=normalize(ms),\
         normalize(pan)
     # ms_suburb,pan_suburb=normalize(ms_suburb),\
@@ -68,19 +69,19 @@ def load_data(area,full_res=False):
         # gt.astype(np.float32)
 
 if __name__ == "__main__":
-    full_res=True
+    full_res=False
     ms_size=512 if full_res else 128
-    name='DenseLapFusion'
-    model=DenseNoComV2(ms_size//4)
-    ms,pan=tf.placeholder(tf.float32,[1,ms_size//4,ms_size//4,4]),\
-        tf.placeholder(tf.float32,[1,ms_size*4//4,ms_size*4//4,1])
+    name='RSIFNN'
+    model=RSIFNN(ms_size)
+    ms,pan=tf.placeholder(tf.float32,[1,ms_size,ms_size,4]),\
+        tf.placeholder(tf.float32,[1,ms_size*4,ms_size*4,1])
     if 'Lap' in name or 'Dense' in name:
         _, predict = model.forward(ms, pan)
     else:
         predict = model.forward(ms, pan)
     saver = tf.train.Saver()
     with tf.Session() as sess:
-        load_weight(saver, sess, 'DenseNoComV2')
+        load_weight(saver, sess, name)
         for area in ['downtown','suburb']:
             ms_value,pan_value=load_data(area,full_res)
             result=sess.run(predict,feed_dict={ms:ms_value,pan:pan_value})
@@ -90,16 +91,16 @@ if __name__ == "__main__":
             result=normalize(result,True)
             # sCC=sewar.full_ref.scc(gt_downtown,result_downtown)
             if full_res:
-                matfile='%s_%s%s.mat'%(name,area,'FS')
+                matfile='ExperimentResult/%s_%s%s.mat'%(name,area,'FS')
                 io.savemat(matfile,{'I':result.astype(np.float64)})
             else:
-                matfile = '%s_%s%s.mat' % (name, area, 'DS')
+                matfile = 'ExperimentResult/%s_%s%s.mat' % (name, area, 'DS')
                 io.savemat(matfile,{'I':result.astype(np.float64)})
             result=visual_result(result)
             if full_res:
-                cv2.imwrite('%s%sFS.png' % (name, area), result)
+                cv2.imwrite('ExperimentResult/%s%sFS.png' % (name, area), result)
             else:
-                cv2.imwrite('%s%sDS.png' % (name, area), result)
+                cv2.imwrite('ExperimentResult/%s%sDS.png' % (name, area), result)
         # gt_downtown,gt_suburb=visual_result(gt_downtown),visual_result(gt_suburb)
         # suburb=np.concatenate([result_suburb,gt_suburb],1)
         # downtown=np.concatenate([result_downtown,gt_downtown],1)
